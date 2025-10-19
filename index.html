@@ -157,6 +157,15 @@
       background: #f57c00;
     }
 
+    .btn-download {
+      background: #2196f3;
+      color: white;
+    }
+
+    .btn-download:hover {
+      background: #1976d2;
+    }
+
     .button-group {
       display: flex;
       gap: 15px;
@@ -331,6 +340,22 @@
       background: white;
     }
 
+    .image-preview {
+      max-width: 100%;
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+
+    .download-section {
+      margin-top: 20px;
+      text-align: center;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: var(--border-radius);
+    }
+
     @media (max-width: 768px) {
       .form-row {
         flex-direction: column;
@@ -352,6 +377,8 @@
     }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Biblioteca html2canvas para gerar imagens -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
   <div class="container">
@@ -431,6 +458,20 @@
       <div class="card">
         <h2><i class="fas fa-chart-line"></i> Resultado do Cálculo</h2>
         <div id="resultado"></div>
+        
+        <div class="download-section">
+          <button class="btn-download" onclick="gerarImagem()">
+            <i class="fas fa-download"></i> Gerar Imagem do Resultado
+          </button>
+          <div id="imagemPreview" class="hidden">
+            <img id="previewImage" class="image-preview" alt="Preview do resultado">
+            <div class="button-group">
+              <button class="btn-download" onclick="baixarImagem()">
+                <i class="fas fa-save"></i> Salvar Imagem
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -460,6 +501,8 @@
 
     // Contador para IDs únicos dos equipamentos
     let equipamentoCounter = 0;
+    // Variável para armazenar a imagem gerada
+    let imagemGerada = null;
 
     // Função para atualizar a interface quando o tipo de incidente muda
     function atualizarInterface() {
@@ -780,6 +823,10 @@
       // Exibir resultado
       document.getElementById('resultado').innerHTML = resultadoHTML;
       document.getElementById('resultadoContainer').classList.remove('hidden');
+      
+      // Esconder preview de imagem anterior
+      document.getElementById('imagemPreview').classList.add('hidden');
+      imagemGerada = null;
     }
 
     // Função para formatar tempo em milissegundos para formato legível
@@ -795,6 +842,54 @@
       }
     }
 
+    // Função para gerar imagem do resultado
+    function gerarImagem() {
+      const resultadoElement = document.getElementById('resultado');
+      
+      // Adicionar um pequeno delay para garantir que o DOM esteja atualizado
+      setTimeout(() => {
+        html2canvas(resultadoElement, {
+          backgroundColor: '#ffffff',
+          scale: 2, // Maior qualidade
+          useCORS: true,
+          logging: false
+        }).then(canvas => {
+          // Converter canvas para imagem
+          const imagemURL = canvas.toDataURL('image/png');
+          imagemGerada = imagemURL;
+          
+          // Mostrar preview
+          const previewImage = document.getElementById('previewImage');
+          previewImage.src = imagemURL;
+          document.getElementById('imagemPreview').classList.remove('hidden');
+          
+          // Scroll para a imagem
+          document.getElementById('imagemPreview').scrollIntoView({ 
+            behavior: 'smooth' 
+          });
+        }).catch(error => {
+          console.error('Erro ao gerar imagem:', error);
+          alert('Erro ao gerar imagem. Tente novamente.');
+        });
+      }, 100);
+    }
+
+    // Função para baixar a imagem gerada
+    function baixarImagem() {
+      if (!imagemGerada) {
+        alert('Nenhuma imagem foi gerada ainda.');
+        return;
+      }
+      
+      const link = document.createElement('a');
+      const tipoIncidente = document.getElementById('tipoIncidente').value;
+      const nomeArquivo = `resultado_incidente_${tipoIncidente || 'geral'}_${new Date().toISOString().slice(0, 10)}.png`;
+      
+      link.download = nomeArquivo;
+      link.href = imagemGerada;
+      link.click();
+    }
+
     // Função para limpar campos
     function limparCampos() {
       document.getElementById('tipoIncidente').value = '';
@@ -808,6 +903,8 @@
       document.getElementById('equipamentosContainer').innerHTML = '';
       equipamentoCounter = 0;
       document.getElementById('resultadoContainer').classList.add('hidden');
+      document.getElementById('imagemPreview').classList.add('hidden');
+      imagemGerada = null;
     }
   </script>
 </body>
