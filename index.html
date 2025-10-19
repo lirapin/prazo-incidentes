@@ -110,6 +110,10 @@
       max-width: 150px;
     }
 
+    .hora-input {
+      max-width: 150px;
+    }
+
     button {
       background: var(--primary-color);
       color: white;
@@ -290,12 +294,12 @@
         
         <div class="form-row">
           <div class="form-group">
-            <label for="prazoHoras">Prazo (horas):</label>
-            <input type="number" id="prazoHoras" class="numero-input" min="0.1" max="24" step="0.1" value="1.5">
-            <small>Informe o prazo máximo em horas</small>
+            <label for="prazoHoras">Prazo (formato hh:mm):</label>
+            <input type="text" id="prazoHoras" class="hora-input" placeholder="HH:MM" value="01:30">
+            <small>Informe o prazo máximo no formato HH:MM</small>
           </div>
           
-          <div class="form-group">
+          <div class="form-group" id="retroagirGroup">
             <label for="minutosRetroagir">Minutos para Retroagir:</label>
             <input type="number" id="minutosRetroagir" class="numero-input" min="1" max="120" value="15">
             <small>Minutos que podem ser retroagidos</small>
@@ -322,19 +326,35 @@
   </div>
 
   <script>
-    // Valores padrão para cada tipo de incidente
+    // Valores padrão para cada tipo de incidente (agora em formato HH:MM)
     const valoresPadrao = {
-      'rede-hfc-sem-sinal': { prazo: 1.5, retroagir: 15 },
-      'rede-hfc-degradacao': { prazo: 6, retroagir: 30 },
-      'fibra-hfc-sem-sinal': { prazo: 1.5, retroagir: 15 },
-      'fibra-hfc-degradacao': { prazo: 6, retroagir: 30 },
-      'gpon-sem-sinal': { prazo: 4, retroagir: 15 },
-      'gpon-degradacao': { prazo: 6, retroagir: 30 }
+      'rede-hfc-sem-sinal': { prazo: "01:30", retroagir: 15 },
+      'rede-hfc-degradacao': { prazo: "06:00", retroagir: 30 },
+      'fibra-hfc-sem-sinal': { prazo: "01:30", retroagir: 0 },
+      'fibra-hfc-degradacao': { prazo: "06:00", retroagir: 0 },
+      'gpon-sem-sinal': { prazo: "04:00", retroagir: 0 },
+      'gpon-degradacao': { prazo: "06:00", retroagir: 0 }
     };
+
+    // Tipos de incidentes que NÃO permitem retroagir (fibra)
+    const tiposSemRetroagir = [
+      'fibra-hfc-sem-sinal',
+      'fibra-hfc-degradacao',
+      'gpon-sem-sinal',
+      'gpon-degradacao'
+    ];
 
     // Função para atualizar valores padrão quando selecionar um tipo
     function atualizarValoresPadrao() {
       const tipoIncidente = document.getElementById('tipoIncidente').value;
+      const retroagirGroup = document.getElementById('retroagirGroup');
+      
+      // Mostrar ou esconder o campo de retroagir
+      if (tiposSemRetroagir.includes(tipoIncidente)) {
+        retroagirGroup.style.display = 'none';
+      } else {
+        retroagirGroup.style.display = 'block';
+      }
       
       if (tipoIncidente && valoresPadrao[tipoIncidente]) {
         document.getElementById('prazoHoras').value = valoresPadrao[tipoIncidente].prazo;
@@ -342,10 +362,34 @@
       }
     }
 
+    // Função para converter formato HH:MM para minutos
+    function converterHoraParaMinutos(horaString) {
+      const partes = horaString.split(':');
+      if (partes.length !== 2) {
+        throw new Error('Formato de hora inválido. Use HH:MM');
+      }
+      
+      const horas = parseInt(partes[0]);
+      const minutos = parseInt(partes[1]);
+      
+      if (isNaN(horas) || isNaN(minutos) || horas < 0 || minutos < 0 || minutos > 59) {
+        throw new Error('Formato de hora inválido. Use HH:MM');
+      }
+      
+      return horas * 60 + minutos;
+    }
+
+    // Função para converter minutos para formato HH:MM
+    function converterMinutosParaHora(minutosTotal) {
+      const horas = Math.floor(minutosTotal / 60);
+      const minutos = minutosTotal % 60;
+      return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+    }
+
     // Função principal de cálculo de prazos
     function calcularPrazo() {
       const tipoIncidente = document.getElementById('tipoIncidente').value;
-      const prazoHoras = parseFloat(document.getElementById('prazoHoras').value);
+      const prazoHorasString = document.getElementById('prazoHoras').value;
       const minutosRetroagir = parseInt(document.getElementById('minutosRetroagir').value);
       
       if (!tipoIncidente) {
@@ -353,12 +397,21 @@
         return;
       }
       
-      if (!prazoHoras || prazoHoras <= 0) {
+      // Converter o prazo de HH:MM para minutos
+      let prazoMinutos;
+      try {
+        prazoMinutos = converterHoraParaMinutos(prazoHorasString);
+      } catch (error) {
+        alert('Por favor, informe um prazo válido no formato HH:MM (ex: 01:30).');
+        return;
+      }
+      
+      if (prazoMinutos <= 0) {
         alert('Por favor, informe um prazo válido em horas.');
         return;
       }
       
-      if (!minutosRetroagir || minutosRetroagir < 1) {
+      if (!tiposSemRetroagir.includes(tipoIncidente) && (!minutosRetroagir || minutosRetroagir < 1)) {
         alert('Por favor, informe um valor válido para minutos a retroagir.');
         return;
       }
@@ -378,7 +431,7 @@
         return;
       }
       
-      const prazo = prazoHoras * 60 * 60 * 1000; // horas para milissegundos
+      const prazo = prazoMinutos * 60 * 1000; // minutos para milissegundos
       const desconto = minutosRetroagir * 60 * 1000; // minutos para milissegundos
       
       // Calcular tempo decorrido
@@ -388,11 +441,14 @@
       const dentroDoPrazoComRetroagir = tempoDecorrido <= (prazo + desconto);
       const dentroDoPrazoSemRetroagir = tempoDecorrido <= prazo;
       
+      // Para incidentes de fibra, não permitir retroagir
+      const permiteRetroagir = !tiposSemRetroagir.includes(tipoIncidente);
+      
       // Calcular nova data de encerramento com retroagir (se aplicável)
       let novaDataEncerramento;
       let retroagirAplicado = false;
       
-      if (dentroDoPrazoComRetroagir && !dentroDoPrazoSemRetroagir) {
+      if (permiteRetroagir && dentroDoPrazoComRetroagir && !dentroDoPrazoSemRetroagir) {
         novaDataEncerramento = new Date(dataNormalizacao.getTime() - desconto);
         retroagirAplicado = true;
       } else {
@@ -416,8 +472,13 @@
         <strong>Data/Hora de Abertura:</strong> ${formatarData(dataAbertura)}<br>
         <strong>Data/Hora de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>
         <strong>Tempo Decorrido:</strong> ${formatarTempo(tempoDecorrido)}<br>
-        <strong>Prazo Máximo:</strong> ${prazoHoras} horas (${formatarTempo(prazo)})<br>
-        <strong>Minutos para Retroagir:</strong> ${minutosRetroagir} minutos</div>`;
+        <strong>Prazo Máximo:</strong> ${prazoHorasString} (${formatarTempo(prazo)})<br>`;
+      
+      if (permiteRetroagir) {
+        resultadoHTML += `<strong>Minutos para Retroagir:</strong> ${minutosRetroagir} minutos</div>`;
+      } else {
+        resultadoHTML += `<strong>Minutos para Retroagir:</strong> Não permitido para este tipo de incidente</div>`;
+      }
       
       // Determinar status e mensagem
       let statusClass, statusIcon, statusMensagem;
@@ -425,12 +486,15 @@
       if (dentroDoPrazoSemRetroagir) {
         statusClass = 'resultado-sucesso';
         statusIcon = '✅';
-        statusMensagem = 'DENTRO DO PRAZO - Não é necessário retroagir';
+        statusMensagem = 'DENTRO DO PRAZO';
+        if (permiteRetroagir) {
+          statusMensagem += ' - Não é necessário retroagir';
+        }
         resultadoHTML += `<div class="resultado ${statusClass}">
           <div class="resultado-titulo">${statusIcon} ${statusMensagem}</div>
           <strong>Data/Hora de Encerramento:</strong> ${formatarData(novaDataEncerramento)}
         </div>`;
-      } else if (dentroDoPrazoComRetroagir) {
+      } else if (permiteRetroagir && dentroDoPrazoComRetroagir) {
         statusClass = 'resultado-alerta';
         statusIcon = '⚠️';
         statusMensagem = `FORA DO PRAZO, MAS PODE RETROAGIR ${minutosRetroagir} MINUTOS`;
@@ -442,12 +506,19 @@
       } else {
         statusClass = 'resultado-erro';
         statusIcon = '❌';
-        statusMensagem = 'FORA DO PRAZO - Não é possível retroagir o suficiente';
+        statusMensagem = 'FORA DO PRAZO';
+        if (permiteRetroagir) {
+          statusMensagem += ' - Não é possível retroagir o suficiente';
+        } else {
+          statusMensagem += ' - Retroagir não permitido para este tipo de incidente';
+        }
         resultadoHTML += `<div class="resultado ${statusClass}">
           <div class="resultado-titulo">${statusIcon} ${statusMensagem}</div>
-          <strong>Data/Hora de Encerramento:</strong> ${formatarData(novaDataEncerramento)}<br>
-          <em>O incidente ultrapassou a margem de retroagir permitida.</em>
-        </div>`;
+          <strong>Data/Hora de Encerramento:</strong> ${formatarData(novaDataEncerramento)}<br>`;
+        if (permiteRetroagir) {
+          resultadoHTML += `<em>O incidente ultrapassou a margem de retroagir permitida.</em>`;
+        }
+        resultadoHTML += `</div>`;
       }
       
       // Exibir resultado
@@ -473,8 +544,9 @@
       document.getElementById('tipoIncidente').value = '';
       document.getElementById('dataAbertura').value = '';
       document.getElementById('dataNormalizacao').value = '';
-      document.getElementById('prazoHoras').value = '1.5';
+      document.getElementById('prazoHoras').value = '01:30';
       document.getElementById('minutosRetroagir').value = '15';
+      document.getElementById('retroagirGroup').style.display = 'block';
       document.getElementById('resultadoContainer').classList.add('hidden');
     }
   </script>
