@@ -148,6 +148,15 @@
       background: #66bb6a;
     }
 
+    .btn-tertiary {
+      background: #ff9800;
+      color: white;
+    }
+
+    .btn-tertiary:hover {
+      background: #f57c00;
+    }
+
     .button-group {
       display: flex;
       gap: 15px;
@@ -238,6 +247,72 @@
       border-left: 4px solid var(--accent-color);
     }
 
+    .tooltip {
+      position: relative;
+      display: inline-block;
+    }
+
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 200px;
+      background-color: var(--primary-dark);
+      color: white;
+      text-align: center;
+      border-radius: 6px;
+      padding: 8px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 14px;
+      font-weight: normal;
+    }
+
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .equipamento-group {
+      background: #fff8e1;
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-bottom: 15px;
+      border: 1px solid #ffd54f;
+    }
+
+    .equipamento-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .equipamento-title {
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    .remove-equipamento {
+      background: #f44336;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .add-equipamento {
+      margin-top: 10px;
+    }
+
     @media (max-width: 768px) {
       .form-row {
         flex-direction: column;
@@ -250,6 +325,11 @@
       
       button {
         width: 100%;
+      }
+
+      .tooltip .tooltiptext {
+        width: 150px;
+        margin-left: -75px;
       }
     }
   </style>
@@ -266,7 +346,7 @@
 
       <div class="form-group">
         <label for="tipoIncidente">Tipo de Incidente:</label>
-        <select id="tipoIncidente" onchange="atualizarValoresPadrao()">
+        <select id="tipoIncidente" onchange="atualizarInterface()">
           <option value="">-- Selecione o tipo de incidente --</option>
           <option value="rede-hfc-sem-sinal">REDE - HFC (Sem Sinal)</option>
           <option value="rede-hfc-degradacao">REDE - HFC (Degradação)</option>
@@ -283,10 +363,21 @@
           <input type="datetime-local" id="dataAbertura">
         </div>
         
-        <div class="form-group">
+        <div class="form-group" id="normalizacaoUnicaGroup">
           <label for="dataNormalizacao">Data e Hora de Normalização:</label>
           <input type="datetime-local" id="dataNormalizacao">
         </div>
+      </div>
+
+      <!-- Container para múltiplos equipamentos (inicialmente escondido) -->
+      <div id="multiplosEquipamentosGroup" class="hidden">
+        <h3 style="color: var(--primary-color); margin-bottom: 15px;">Datas de Normalização por Equipamento</h3>
+        <div id="equipamentosContainer">
+          <!-- Os campos de equipamento serão adicionados dinamicamente aqui -->
+        </div>
+        <button type="button" class="btn-tertiary add-equipamento" onclick="adicionarEquipamento()">
+          <i class="fas fa-plus"></i> Adicionar Equipamento
+        </button>
       </div>
 
       <div class="config-group">
@@ -295,8 +386,11 @@
         <div class="form-row">
           <div class="form-group">
             <label for="prazoHoras">Prazo (formato hh:mm):</label>
-            <input type="text" id="prazoHoras" class="hora-input" placeholder="HH:MM" value="01:30">
-            <small>Informe o prazo máximo no formato HH:MM</small>
+            <div class="tooltip">
+              <input type="text" id="prazoHoras" class="hora-input" placeholder="HH:MM" value="01:30">
+              <span class="tooltiptext">Insira o SLA do incidente aqui</span>
+            </div>
+            <small>Informe o prazo máximo</small>
           </div>
           
           <div class="form-group" id="retroagirGroup">
@@ -330,10 +424,10 @@
     const valoresPadrao = {
       'rede-hfc-sem-sinal': { prazo: "01:30", retroagir: 15 },
       'rede-hfc-degradacao': { prazo: "06:00", retroagir: 30 },
-      'fibra-hfc-sem-sinal': { prazo: "01:30", retroagir: 0 },
-      'fibra-hfc-degradacao': { prazo: "06:00", retroagir: 0 },
-      'gpon-sem-sinal': { prazo: "04:00", retroagir: 0 },
-      'gpon-degradacao': { prazo: "06:00", retroagir: 0 }
+      'fibra-hfc-sem-sinal': { prazo: "", retroagir: 0 },
+      'fibra-hfc-degradacao': { prazo: "", retroagir: 0 },
+      'gpon-sem-sinal': { prazo: "", retroagir: 0 },
+      'gpon-degradacao': { prazo: "", retroagir: 0 }
     };
 
     // Tipos de incidentes que NÃO permitem retroagir (fibra)
@@ -344,26 +438,91 @@
       'gpon-degradacao'
     ];
 
-    // Função para atualizar valores padrão quando selecionar um tipo
-    function atualizarValoresPadrao() {
+    // Contador para IDs únicos dos equipamentos
+    let equipamentoCounter = 0;
+
+    // Função para atualizar a interface quando o tipo de incidente muda
+    function atualizarInterface() {
       const tipoIncidente = document.getElementById('tipoIncidente').value;
       const retroagirGroup = document.getElementById('retroagirGroup');
+      const normalizacaoUnicaGroup = document.getElementById('normalizacaoUnicaGroup');
+      const multiplosEquipamentosGroup = document.getElementById('multiplosEquipamentosGroup');
+      const prazoInput = document.getElementById('prazoHoras');
       
       // Mostrar ou esconder o campo de retroagir
       if (tiposSemRetroagir.includes(tipoIncidente)) {
         retroagirGroup.style.display = 'none';
+        // Limpar o campo de prazo para incidentes de fibra
+        prazoInput.value = '';
       } else {
         retroagirGroup.style.display = 'block';
       }
       
-      if (tipoIncidente && valoresPadrao[tipoIncidente]) {
-        document.getElementById('prazoHoras').value = valoresPadrao[tipoIncidente].prazo;
+      // Mostrar campos de normalização apropriados
+      if (tipoIncidente === 'fibra-hfc-sem-sinal') {
+        normalizacaoUnicaGroup.style.display = 'none';
+        multiplosEquipamentosGroup.classList.remove('hidden');
+        // Adicionar um equipamento por padrão
+        if (document.querySelectorAll('.equipamento-group').length === 0) {
+          adicionarEquipamento();
+        }
+      } else {
+        normalizacaoUnicaGroup.style.display = 'block';
+        multiplosEquipamentosGroup.classList.add('hidden');
+        // Limpar equipamentos quando não for necessário
+        document.getElementById('equipamentosContainer').innerHTML = '';
+        equipamentoCounter = 0;
+      }
+      
+      // Aplicar valores padrão apenas para incidentes que não são fibra
+      if (tipoIncidente && valoresPadrao[tipoIncidente] && !tiposSemRetroagir.includes(tipoIncidente)) {
+        prazoInput.value = valoresPadrao[tipoIncidente].prazo;
         document.getElementById('minutosRetroagir').value = valoresPadrao[tipoIncidente].retroagir;
+      }
+    }
+
+    // Função para adicionar um novo campo de equipamento
+    function adicionarEquipamento() {
+      equipamentoCounter++;
+      const container = document.getElementById('equipamentosContainer');
+      const equipamentoHTML = `
+        <div class="equipamento-group" id="equipamento-${equipamentoCounter}">
+          <div class="equipamento-header">
+            <span class="equipamento-title">Equipamento ${equipamentoCounter}</span>
+            <button type="button" class="remove-equipamento" onclick="removerEquipamento(${equipamentoCounter})">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="form-group">
+            <label for="dataNormalizacaoEquipamento-${equipamentoCounter}">Data e Hora de Normalização:</label>
+            <input type="datetime-local" id="dataNormalizacaoEquipamento-${equipamentoCounter}">
+          </div>
+        </div>
+      `;
+      container.insertAdjacentHTML('beforeend', equipamentoHTML);
+    }
+
+    // Função para remover um campo de equipamento
+    function removerEquipamento(id) {
+      const equipamento = document.getElementById(`equipamento-${id}`);
+      if (equipamento) {
+        equipamento.remove();
+        // Renumerar os equipamentos restantes
+        const equipamentos = document.querySelectorAll('.equipamento-group');
+        equipamentos.forEach((equip, index) => {
+          const title = equip.querySelector('.equipamento-title');
+          title.textContent = `Equipamento ${index + 1}`;
+        });
       }
     }
 
     // Função para converter formato HH:MM para minutos
     function converterHoraParaMinutos(horaString) {
+      // Verificar se o campo está vazio (para incidentes de fibra)
+      if (!horaString || horaString.trim() === '') {
+        throw new Error('Por favor, informe o SLA do incidente no formato HH:MM.');
+      }
+      
       const partes = horaString.split(':');
       if (partes.length !== 2) {
         throw new Error('Formato de hora inválido. Use HH:MM');
@@ -386,6 +545,31 @@
       return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
     }
 
+    // Função para calcular a média das datas de normalização
+    function calcularMediaDatasNormalizacao() {
+      const inputs = document.querySelectorAll('[id^="dataNormalizacaoEquipamento-"]');
+      if (inputs.length === 0) {
+        throw new Error('Por favor, adicione pelo menos um equipamento e preencha as datas de normalização.');
+      }
+      
+      let somaTempos = 0;
+      let datasValidas = 0;
+      
+      inputs.forEach(input => {
+        const data = new Date(input.value);
+        if (!isNaN(data.getTime())) {
+          somaTempos += data.getTime();
+          datasValidas++;
+        }
+      });
+      
+      if (datasValidas === 0) {
+        throw new Error('Por favor, preencha pelo menos uma data de normalização válida.');
+      }
+      
+      return new Date(somaTempos / datasValidas);
+    }
+
     // Função principal de cálculo de prazos
     function calcularPrazo() {
       const tipoIncidente = document.getElementById('tipoIncidente').value;
@@ -402,7 +586,7 @@
       try {
         prazoMinutos = converterHoraParaMinutos(prazoHorasString);
       } catch (error) {
-        alert('Por favor, informe um prazo válido no formato HH:MM (ex: 01:30).');
+        alert(error.message);
         return;
       }
       
@@ -417,12 +601,30 @@
       }
       
       const dataAbertura = new Date(document.getElementById('dataAbertura').value);
-      const dataNormalizacao = new Date(document.getElementById('dataNormalizacao').value);
       
-      // Validar datas
-      if (isNaN(dataAbertura.getTime()) || isNaN(dataNormalizacao.getTime())) {
-        alert('Por favor, preencha todas as datas e horários corretamente.');
+      // Validar data de abertura
+      if (isNaN(dataAbertura.getTime())) {
+        alert('Por favor, preencha a data e horário de abertura corretamente.');
         return;
+      }
+      
+      // Obter data de normalização (única ou média)
+      let dataNormalizacao;
+      if (tipoIncidente === 'fibra-hfc-sem-sinal') {
+        try {
+          dataNormalizacao = calcularMediaDatasNormalizacao();
+        } catch (error) {
+          alert(error.message);
+          return;
+        }
+      } else {
+        dataNormalizacao = new Date(document.getElementById('dataNormalizacao').value);
+        
+        // Validar data de normalização única
+        if (isNaN(dataNormalizacao.getTime())) {
+          alert('Por favor, preencha a data e horário de normalização corretamente.');
+          return;
+        }
       }
       
       // Verificar se a data de normalização é posterior à abertura
@@ -469,9 +671,18 @@
       // Montar resultado
       let resultadoHTML = `<div class="resultado-detalhes">
         <strong>Tipo de Incidente:</strong> ${document.getElementById('tipoIncidente').options[document.getElementById('tipoIncidente').selectedIndex].text}<br>
-        <strong>Data/Hora de Abertura:</strong> ${formatarData(dataAbertura)}<br>
-        <strong>Data/Hora de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>
-        <strong>Tempo Decorrido:</strong> ${formatarTempo(tempoDecorrido)}<br>
+        <strong>Data/Hora de Abertura:</strong> ${formatarData(dataAbertura)}<br>`;
+      
+      // Adicionar informações específicas sobre normalização
+      if (tipoIncidente === 'fibra-hfc-sem-sinal') {
+        const inputs = document.querySelectorAll('[id^="dataNormalizacaoEquipamento-"]');
+        resultadoHTML += `<strong>Número de Equipamentos:</strong> ${inputs.length}<br>`;
+        resultadoHTML += `<strong>Data/Hora Média de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>`;
+      } else {
+        resultadoHTML += `<strong>Data/Hora de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>`;
+      }
+      
+      resultadoHTML += `<strong>Tempo Decorrido:</strong> ${formatarTempo(tempoDecorrido)}<br>
         <strong>Prazo Máximo:</strong> ${prazoHorasString} (${formatarTempo(prazo)})<br>`;
       
       if (permiteRetroagir) {
@@ -547,6 +758,10 @@
       document.getElementById('prazoHoras').value = '01:30';
       document.getElementById('minutosRetroagir').value = '15';
       document.getElementById('retroagirGroup').style.display = 'block';
+      document.getElementById('normalizacaoUnicaGroup').style.display = 'block';
+      document.getElementById('multiplosEquipamentosGroup').classList.add('hidden');
+      document.getElementById('equipamentosContainer').innerHTML = '';
+      equipamentoCounter = 0;
       document.getElementById('resultadoContainer').classList.add('hidden');
     }
   </script>
