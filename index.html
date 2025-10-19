@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora de Prazos - Incidentes HFC</title>
+  <title>Calculadora de Prazos - Incidentes</title>
   <style>
     /* ===== VARIÁVEIS DE CORES E ESTILOS ===== */
     :root {
@@ -19,7 +19,6 @@
       --transition: all 0.3s ease;
     }
 
-    /* ===== RESET E CONFIGURAÇÕES GERAIS ===== */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -43,7 +42,6 @@
       width: 100%;
     }
 
-    /* ===== HEADER ===== */
     header {
       text-align: center;
       margin-bottom: 30px;
@@ -58,7 +56,6 @@
       letter-spacing: 1px;
     }
 
-    /* ===== CARDS ===== */
     .card {
       background: white;
       border-radius: var(--border-radius);
@@ -81,7 +78,6 @@
       font-size: 22px;
     }
 
-    /* ===== FORMULÁRIOS ===== */
     .form-group {
       margin-bottom: 20px;
     }
@@ -93,7 +89,7 @@
       color: var(--primary-dark);
     }
 
-    input, select, textarea {
+    input, select {
       width: 100%;
       padding: 12px 15px;
       border: 1px solid #ddd;
@@ -103,14 +99,17 @@
       background-color: #f9f9f9;
     }
 
-    input:focus, select:focus, textarea:focus {
+    input:focus, select:focus {
       outline: none;
       border-color: var(--primary-light);
       box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
       background-color: white;
     }
 
-    /* ===== BOTÕES ===== */
+    .numero-input {
+      max-width: 150px;
+    }
+
     button {
       background: var(--primary-color);
       color: white;
@@ -151,7 +150,6 @@
       margin-top: 25px;
     }
 
-    /* ===== LAYOUT EM GRID ===== */
     .form-row {
       display: flex;
       gap: 20px;
@@ -163,7 +161,10 @@
       margin-bottom: 0;
     }
 
-    /* ===== RESULTADOS ===== */
+    .hidden {
+      display: none;
+    }
+
     .resultado {
       background: var(--secondary-color);
       border-radius: var(--border-radius);
@@ -197,7 +198,6 @@
       border-left-color: #f44336;
     }
 
-    /* ===== INDICADORES ===== */
     .status-indicator {
       display: inline-block;
       width: 12px;
@@ -210,7 +210,6 @@
       background-color: var(--primary-light);
     }
 
-    /* ===== FOOTER ===== */
     footer {
       text-align: center;
       margin-top: 40px;
@@ -227,7 +226,14 @@
       padding-top: 10px;
     }
 
-    /* ===== RESPONSIVIDADE ===== */
+    .config-group {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-bottom: 20px;
+      border-left: 4px solid var(--accent-color);
+    }
+
     @media (max-width: 768px) {
       .form-row {
         flex-direction: column;
@@ -242,28 +248,28 @@
         width: 100%;
       }
     }
-
-    /* ===== CAMPOS NUMÉRICOS ===== */
-    .numero-input {
-      max-width: 150px;
-    }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Calculadora de Prazos HFC</h1>
+      <h1>Calculadora de Prazos</h1>
     </header>
 
     <div class="card">
       <h2><span class="status-indicator status-active"></span>Configuração do Incidente</h2>
 
       <div class="form-group">
-        <label for="tipoIncidente">Tipo de Incidente HFC:</label>
-        <select id="tipoIncidente">
+        <label for="tipoIncidente">Tipo de Incidente:</label>
+        <select id="tipoIncidente" onchange="atualizarValoresPadrao()">
+          <option value="">-- Selecione o tipo de incidente --</option>
           <option value="rede-hfc-sem-sinal">REDE - HFC (Sem Sinal)</option>
           <option value="rede-hfc-degradacao">REDE - HFC (Degradação)</option>
+          <option value="fibra-hfc-sem-sinal">FIBRA - HFC (Sem Sinal)</option>
+          <option value="fibra-hfc-degradacao">FIBRA - HFC (Degradação)</option>
+          <option value="gpon-sem-sinal">GPON - (Sem Sinal)</option>
+          <option value="gpon-degradacao">GPON - (Degradação)</option>
         </select>
       </div>
 
@@ -279,11 +285,21 @@
         </div>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="minutosRetroagir">Minutos para Retroagir:</label>
-          <input type="number" id="minutosRetroagir" class="numero-input" min="1" max="60" value="15">
-          <small>Defina quantos minutos podem ser retroagidos</small>
+      <div class="config-group">
+        <h3 style="color: var(--primary-color); margin-bottom: 15px;">Configurações de Prazo</h3>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="prazoHoras">Prazo (horas):</label>
+            <input type="number" id="prazoHoras" class="numero-input" min="0.1" max="24" step="0.1" value="1.5">
+            <small>Informe o prazo máximo em horas</small>
+          </div>
+          
+          <div class="form-group">
+            <label for="minutosRetroagir">Minutos para Retroagir:</label>
+            <input type="number" id="minutosRetroagir" class="numero-input" min="1" max="120" value="15">
+            <small>Minutos que podem ser retroagidos</small>
+          </div>
         </div>
       </div>
 
@@ -293,7 +309,6 @@
       </div>
     </div>
 
-    <!-- Resultados -->
     <div id="resultadoContainer" class="hidden">
       <div class="card">
         <h2><i class="fas fa-chart-line"></i> Resultado do Cálculo</h2>
@@ -307,13 +322,39 @@
   </div>
 
   <script>
+    // Valores padrão para cada tipo de incidente
+    const valoresPadrao = {
+      'rede-hfc-sem-sinal': { prazo: 1.5, retroagir: 15 },
+      'rede-hfc-degradacao': { prazo: 6, retroagir: 30 },
+      'fibra-hfc-sem-sinal': { prazo: 1.5, retroagir: 15 },
+      'fibra-hfc-degradacao': { prazo: 6, retroagir: 30 },
+      'gpon-sem-sinal': { prazo: 4, retroagir: 15 },
+      'gpon-degradacao': { prazo: 6, retroagir: 30 }
+    };
+
+    // Função para atualizar valores padrão quando selecionar um tipo
+    function atualizarValoresPadrao() {
+      const tipoIncidente = document.getElementById('tipoIncidente').value;
+      
+      if (tipoIncidente && valoresPadrao[tipoIncidente]) {
+        document.getElementById('prazoHoras').value = valoresPadrao[tipoIncidente].prazo;
+        document.getElementById('minutosRetroagir').value = valoresPadrao[tipoIncidente].retroagir;
+      }
+    }
+
     // Função principal de cálculo de prazos
     function calcularPrazo() {
       const tipoIncidente = document.getElementById('tipoIncidente').value;
+      const prazoHoras = parseFloat(document.getElementById('prazoHoras').value);
       const minutosRetroagir = parseInt(document.getElementById('minutosRetroagir').value);
       
       if (!tipoIncidente) {
         alert('Por favor, selecione o tipo de incidente.');
+        return;
+      }
+      
+      if (!prazoHoras || prazoHoras <= 0) {
+        alert('Por favor, informe um prazo válido em horas.');
         return;
       }
       
@@ -331,18 +372,14 @@
         return;
       }
       
-      // Configurar parâmetros baseados no tipo de incidente
-      let prazo;
-      switch(tipoIncidente) {
-        case 'rede-hfc-sem-sinal':
-          prazo = 1.5 * 60 * 60 * 1000; // 1.5 horas em milissegundos
-          break;
-        case 'rede-hfc-degradacao':
-          prazo = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
-          break;
+      // Verificar se a data de normalização é posterior à abertura
+      if (dataNormalizacao <= dataAbertura) {
+        alert('A data de normalização deve ser posterior à data de abertura.');
+        return;
       }
       
-      const desconto = minutosRetroagir * 60 * 1000; // minutos em milissegundos
+      const prazo = prazoHoras * 60 * 60 * 1000; // horas para milissegundos
+      const desconto = minutosRetroagir * 60 * 1000; // minutos para milissegundos
       
       // Calcular tempo decorrido
       const tempoDecorrido = dataNormalizacao.getTime() - dataAbertura.getTime();
@@ -353,8 +390,11 @@
       
       // Calcular nova data de encerramento com retroagir (se aplicável)
       let novaDataEncerramento;
+      let retroagirAplicado = false;
+      
       if (dentroDoPrazoComRetroagir && !dentroDoPrazoSemRetroagir) {
         novaDataEncerramento = new Date(dataNormalizacao.getTime() - desconto);
+        retroagirAplicado = true;
       } else {
         novaDataEncerramento = dataNormalizacao;
       }
@@ -376,7 +416,7 @@
         <strong>Data/Hora de Abertura:</strong> ${formatarData(dataAbertura)}<br>
         <strong>Data/Hora de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>
         <strong>Tempo Decorrido:</strong> ${formatarTempo(tempoDecorrido)}<br>
-        <strong>Prazo Máximo:</strong> ${formatarTempo(prazo)}<br>
+        <strong>Prazo Máximo:</strong> ${prazoHoras} horas (${formatarTempo(prazo)})<br>
         <strong>Minutos para Retroagir:</strong> ${minutosRetroagir} minutos</div>`;
       
       // Determinar status e mensagem
@@ -430,18 +470,13 @@
 
     // Função para limpar campos
     function limparCampos() {
-      document.getElementById('tipoIncidente').value = 'rede-hfc-sem-sinal';
+      document.getElementById('tipoIncidente').value = '';
       document.getElementById('dataAbertura').value = '';
       document.getElementById('dataNormalizacao').value = '';
+      document.getElementById('prazoHoras').value = '1.5';
       document.getElementById('minutosRetroagir').value = '15';
       document.getElementById('resultadoContainer').classList.add('hidden');
     }
-
-    // Inicializar com valores padrão
-    document.addEventListener('DOMContentLoaded', function() {
-      // Configurar valores iniciais
-      document.getElementById('minutosRetroagir').value = '15';
-    });
   </script>
 </body>
 </html>
