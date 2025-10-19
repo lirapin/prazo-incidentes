@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calculadora de Prazos - Incidentes de Rede</title>
+  <title>Calculadora de Prazos - Incidentes HFC</title>
   <style>
     /* ===== VARIÁVEIS DE CORES E ESTILOS ===== */
     :root {
@@ -58,11 +58,6 @@
       letter-spacing: 1px;
     }
 
-    .subtitle {
-      color: var(--text-light);
-      font-size: 16px;
-    }
-
     /* ===== CARDS ===== */
     .card {
       background: white;
@@ -113,12 +108,6 @@
       border-color: var(--primary-light);
       box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
       background-color: white;
-    }
-
-    .date-format {
-      font-size: 12px;
-      color: var(--text-light);
-      margin-top: 5px;
     }
 
     /* ===== BOTÕES ===== */
@@ -254,26 +243,9 @@
       }
     }
 
-    /* ===== INSTRUÇÕES ===== */
-    .instrucoes {
-      background: #e3f2fd;
-      border-left: 4px solid #2196f3;
-      padding: 15px;
-      border-radius: 4px;
-      margin-bottom: 20px;
-    }
-
-    .instrucoes h3 {
-      color: #1565c0;
-      margin-bottom: 10px;
-    }
-
-    .instrucoes ul {
-      padding-left: 20px;
-    }
-
-    .instrucoes li {
-      margin-bottom: 8px;
+    /* ===== CAMPOS NUMÉRICOS ===== */
+    .numero-input {
+      max-width: 150px;
     }
   </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -281,63 +253,37 @@
 <body>
   <div class="container">
     <header>
-      <h1>Calculadora de Prazos para Incidentes</h1>
-      <p class="subtitle">Sistema especializado para cálculo de prazos de rede HFC e GPON</p>
+      <h1>Calculadora de Prazos HFC</h1>
     </header>
 
     <div class="card">
-      <div class="instrucoes">
-        <h3><i class="fas fa-info-circle"></i> Como usar a calculadora:</h3>
-        <ul>
-          <li><strong>REDE - HFC (Sem sinal):</strong> Prazo de 01:30h com desconto de 15min</li>
-          <li><strong>REDE - HFC (Degradação):</strong> Prazo de 06:00h com desconto de 30min</li>
-          <li><strong>FIBRA - GPON:</strong> Prazo de 04:00h com desconto de 15min</li>
-          <li><strong>FIBRA - HFC:</strong> Prazo de 06:00h com desconto de 15min no IDS final</li>
-        </ul>
-      </div>
-
-      <h2><span class="status-indicator status-active"></span>Selecione o Tipo de Incidente</h2>
+      <h2><span class="status-indicator status-active"></span>Configuração do Incidente</h2>
 
       <div class="form-group">
-        <label for="tipoIncidente">Tipo de Incidente:</label>
-        <select id="tipoIncidente" onchange="mostrarCamposEspecificos()">
-          <option value="">-- Selecione o tipo de incidente --</option>
+        <label for="tipoIncidente">Tipo de Incidente HFC:</label>
+        <select id="tipoIncidente">
           <option value="rede-hfc-sem-sinal">REDE - HFC (Sem Sinal)</option>
           <option value="rede-hfc-degradacao">REDE - HFC (Degradação)</option>
-          <option value="fibra-gpon">FIBRA - GPON</option>
-          <option value="fibra-hfc">FIBRA - HFC</option>
         </select>
       </div>
 
-      <!-- Campos para REDE-HFC e FIBRA-GPON -->
-      <div id="campos-data-hora" class="hidden">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="dataAbertura">Data e Hora de Abertura:</label>
-            <input type="datetime-local" id="dataAbertura">
-          </div>
-          
-          <div class="form-group">
-            <label for="dataNormalizacao">Data e Hora de Normalização:</label>
-            <input type="datetime-local" id="dataNormalizacao">
-          </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dataAbertura">Data e Hora de Abertura:</label>
+          <input type="datetime-local" id="dataAbertura">
+        </div>
+        
+        <div class="form-group">
+          <label for="dataNormalizacao">Data e Hora de Normalização:</label>
+          <input type="datetime-local" id="dataNormalizacao">
         </div>
       </div>
 
-      <!-- Campos específicos para FIBRA-HFC -->
-      <div id="campos-fibra-hfc" class="hidden">
+      <div class="form-row">
         <div class="form-group">
-          <label for="idsFinal">IDS Final (Média de Normalização):</label>
-          <input type="datetime-local" id="idsFinal">
-          <div class="date-format">Informe a média de normalização calculada pela ferramenta</div>
-        </div>
-      </div>
-
-      <!-- Campos específicos para FIBRA-GPON -->
-      <div id="campos-fibra-gpon" class="hidden">
-        <div class="form-group">
-          <label for="primeiroEquipamento">Data e Hora do Primeiro Equipamento Operante:</label>
-          <input type="datetime-local" id="primeiroEquipamento">
+          <label for="minutosRetroagir">Minutos para Retroagir:</label>
+          <input type="number" id="minutosRetroagir" class="numero-input" min="1" max="60" value="15">
+          <small>Defina quantos minutos podem ser retroagidos</small>
         </div>
       </div>
 
@@ -361,93 +307,53 @@
   </div>
 
   <script>
-    // Função para mostrar campos específicos baseados no tipo de incidente
-    function mostrarCamposEspecificos() {
-      const tipoIncidente = document.getElementById('tipoIncidente').value;
-      
-      // Esconder todos os campos primeiro
-      document.getElementById('campos-data-hora').classList.add('hidden');
-      document.getElementById('campos-fibra-hfc').classList.add('hidden');
-      document.getElementById('campos-fibra-gpon').classList.add('hidden');
-      document.getElementById('resultadoContainer').classList.add('hidden');
-      
-      // Mostrar campos baseados no tipo selecionado
-      if (tipoIncidente === 'rede-hfc-sem-sinal' || tipoIncidente === 'rede-hfc-degradacao') {
-        document.getElementById('campos-data-hora').classList.remove('hidden');
-      } else if (tipoIncidente === 'fibra-gpon') {
-        document.getElementById('campos-data-hora').classList.remove('hidden');
-        document.getElementById('campos-fibra-gpon').classList.remove('hidden');
-      } else if (tipoIncidente === 'fibra-hfc') {
-        document.getElementById('campos-fibra-hfc').classList.remove('hidden');
-      }
-    }
-
     // Função principal de cálculo de prazos
     function calcularPrazo() {
       const tipoIncidente = document.getElementById('tipoIncidente').value;
+      const minutosRetroagir = parseInt(document.getElementById('minutosRetroagir').value);
       
       if (!tipoIncidente) {
         alert('Por favor, selecione o tipo de incidente.');
         return;
       }
       
-      let dataAbertura, dataNormalizacao, prazo, desconto;
-      let resultadoHTML = '';
-      
-      // Configurar parâmetros baseados no tipo de incidente
-      switch(tipoIncidente) {
-        case 'rede-hfc-sem-sinal':
-          dataAbertura = new Date(document.getElementById('dataAbertura').value);
-          dataNormalizacao = new Date(document.getElementById('dataNormalizacao').value);
-          prazo = 1.5 * 60 * 60 * 1000; // 1.5 horas em milissegundos
-          desconto = 15 * 60 * 1000; // 15 minutos em milissegundos
-          break;
-          
-        case 'rede-hfc-degradacao':
-          dataAbertura = new Date(document.getElementById('dataAbertura').value);
-          dataNormalizacao = new Date(document.getElementById('dataNormalizacao').value);
-          prazo = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
-          desconto = 30 * 60 * 1000; // 30 minutos em milissegundos
-          break;
-          
-        case 'fibra-gpon':
-          dataAbertura = new Date(document.getElementById('dataAbertura').value);
-          dataNormalizacao = new Date(document.getElementById('primeiroEquipamento').value);
-          prazo = 4 * 60 * 60 * 1000; // 4 horas em milissegundos
-          desconto = 15 * 60 * 1000; // 15 minutos em milissegundos
-          break;
-          
-        case 'fibra-hfc':
-          dataNormalizacao = new Date(document.getElementById('idsFinal').value);
-          prazo = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
-          desconto = 15 * 60 * 1000; // 15 minutos em milissegundos
-          break;
+      if (!minutosRetroagir || minutosRetroagir < 1) {
+        alert('Por favor, informe um valor válido para minutos a retroagir.');
+        return;
       }
       
+      const dataAbertura = new Date(document.getElementById('dataAbertura').value);
+      const dataNormalizacao = new Date(document.getElementById('dataNormalizacao').value);
+      
       // Validar datas
-      if ((tipoIncidente !== 'fibra-hfc' && isNaN(dataAbertura.getTime())) || 
-          isNaN(dataNormalizacao.getTime())) {
+      if (isNaN(dataAbertura.getTime()) || isNaN(dataNormalizacao.getTime())) {
         alert('Por favor, preencha todas as datas e horários corretamente.');
         return;
       }
       
-      // Calcular tempo decorrido
-      let tempoDecorrido;
-      if (tipoIncidente === 'fibra-hfc') {
-        // Para FIBRA-HFC, usamos apenas o IDS final
-        tempoDecorrido = dataNormalizacao.getTime();
-        dataAbertura = new Date(tempoDecorrido - prazo); // Data de abertura calculada
-      } else {
-        tempoDecorrido = dataNormalizacao.getTime() - dataAbertura.getTime();
+      // Configurar parâmetros baseados no tipo de incidente
+      let prazo;
+      switch(tipoIncidente) {
+        case 'rede-hfc-sem-sinal':
+          prazo = 1.5 * 60 * 60 * 1000; // 1.5 horas em milissegundos
+          break;
+        case 'rede-hfc-degradacao':
+          prazo = 6 * 60 * 60 * 1000; // 6 horas em milissegundos
+          break;
       }
       
-      // Calcular se está dentro do prazo com desconto
-      const dentroDoPrazoComDesconto = tempoDecorrido <= (prazo + desconto);
-      const dentroDoPrazoSemDesconto = tempoDecorrido <= prazo;
+      const desconto = minutosRetroagir * 60 * 1000; // minutos em milissegundos
       
-      // Calcular nova data de encerramento com desconto (se aplicável)
+      // Calcular tempo decorrido
+      const tempoDecorrido = dataNormalizacao.getTime() - dataAbertura.getTime();
+      
+      // Calcular se está dentro do prazo com retroagir
+      const dentroDoPrazoComRetroagir = tempoDecorrido <= (prazo + desconto);
+      const dentroDoPrazoSemRetroagir = tempoDecorrido <= prazo;
+      
+      // Calcular nova data de encerramento com retroagir (se aplicável)
       let novaDataEncerramento;
-      if (dentroDoPrazoComDesconto && !dentroDoPrazoSemDesconto) {
+      if (dentroDoPrazoComRetroagir && !dentroDoPrazoSemRetroagir) {
         novaDataEncerramento = new Date(dataNormalizacao.getTime() - desconto);
       } else {
         novaDataEncerramento = dataNormalizacao;
@@ -465,53 +371,42 @@
       };
       
       // Montar resultado
-      resultadoHTML += `<div class="resultado-detalhes">
-        <strong>Tipo de Incidente:</strong> ${document.getElementById('tipoIncidente').options[document.getElementById('tipoIncidente').selectedIndex].text}<br>`;
-      
-      if (tipoIncidente !== 'fibra-hfc') {
-        resultadoHTML += `<strong>Data/Hora de Abertura:</strong> ${formatarData(dataAbertura)}<br>`;
-      }
-      
-      if (tipoIncidente === 'fibra-gpon') {
-        resultadoHTML += `<strong>Primeiro Equipamento Operante:</strong> ${formatarData(dataNormalizacao)}<br>`;
-      } else if (tipoIncidente === 'fibra-hfc') {
-        resultadoHTML += `<strong>IDS Final (Média):</strong> ${formatarData(dataNormalizacao)}<br>`;
-      } else {
-        resultadoHTML += `<strong>Data/Hora de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>`;
-      }
-      
-      resultadoHTML += `<strong>Tempo Decorrido:</strong> ${formatarTempo(tempoDecorrido)}<br>`;
-      resultadoHTML += `<strong>Prazo Máximo:</strong> ${formatarTempo(prazo)}<br>`;
-      resultadoHTML += `<strong>Desconto Aplicável:</strong> ${formatarTempo(desconto)}</div>`;
+      let resultadoHTML = `<div class="resultado-detalhes">
+        <strong>Tipo de Incidente:</strong> ${document.getElementById('tipoIncidente').options[document.getElementById('tipoIncidente').selectedIndex].text}<br>
+        <strong>Data/Hora de Abertura:</strong> ${formatarData(dataAbertura)}<br>
+        <strong>Data/Hora de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>
+        <strong>Tempo Decorrido:</strong> ${formatarTempo(tempoDecorrido)}<br>
+        <strong>Prazo Máximo:</strong> ${formatarTempo(prazo)}<br>
+        <strong>Minutos para Retroagir:</strong> ${minutosRetroagir} minutos</div>`;
       
       // Determinar status e mensagem
       let statusClass, statusIcon, statusMensagem;
       
-      if (dentroDoPrazoSemDesconto) {
+      if (dentroDoPrazoSemRetroagir) {
         statusClass = 'resultado-sucesso';
         statusIcon = '✅';
-        statusMensagem = 'DENTRO DO PRAZO - Não é necessário aplicar desconto';
+        statusMensagem = 'DENTRO DO PRAZO - Não é necessário retroagir';
         resultadoHTML += `<div class="resultado ${statusClass}">
           <div class="resultado-titulo">${statusIcon} ${statusMensagem}</div>
           <strong>Data/Hora de Encerramento:</strong> ${formatarData(novaDataEncerramento)}
         </div>`;
-      } else if (dentroDoPrazoComDesconto) {
+      } else if (dentroDoPrazoComRetroagir) {
         statusClass = 'resultado-alerta';
         statusIcon = '⚠️';
-        statusMensagem = 'FORA DO PRAZO, MAS DENTRO DA MARGEM DE DESCONTO';
+        statusMensagem = `FORA DO PRAZO, MAS PODE RETROAGIR ${minutosRetroagir} MINUTOS`;
         resultadoHTML += `<div class="resultado ${statusClass}">
           <div class="resultado-titulo">${statusIcon} ${statusMensagem}</div>
-          <strong>Data/Hora de Encerramento com Desconto:</strong> ${formatarData(novaDataEncerramento)}<br>
-          <em>Desconto de ${formatarTempo(desconto)} aplicado para atender ao prazo.</em>
+          <strong>Data/Hora de Encerramento Retroagida:</strong> ${formatarData(novaDataEncerramento)}<br>
+          <em>Retroagindo ${minutosRetroagir} minutos para atender ao prazo.</em>
         </div>`;
       } else {
         statusClass = 'resultado-erro';
         statusIcon = '❌';
-        statusMensagem = 'FORA DO PRAZO - Não é possível aplicar desconto';
+        statusMensagem = 'FORA DO PRAZO - Não é possível retroagir o suficiente';
         resultadoHTML += `<div class="resultado ${statusClass}">
           <div class="resultado-titulo">${statusIcon} ${statusMensagem}</div>
           <strong>Data/Hora de Encerramento:</strong> ${formatarData(novaDataEncerramento)}<br>
-          <em>O incidente ultrapassou a margem de desconto permitida.</em>
+          <em>O incidente ultrapassou a margem de retroagir permitida.</em>
         </div>`;
       }
       
@@ -535,18 +430,18 @@
 
     // Função para limpar campos
     function limparCampos() {
-      document.getElementById('tipoIncidente').value = '';
+      document.getElementById('tipoIncidente').value = 'rede-hfc-sem-sinal';
       document.getElementById('dataAbertura').value = '';
       document.getElementById('dataNormalizacao').value = '';
-      document.getElementById('idsFinal').value = '';
-      document.getElementById('primeiroEquipamento').value = '';
+      document.getElementById('minutosRetroagir').value = '15';
       document.getElementById('resultadoContainer').classList.add('hidden');
-      
-      // Esconder todos os campos específicos
-      document.getElementById('campos-data-hora').classList.add('hidden');
-      document.getElementById('campos-fibra-hfc').classList.add('hidden');
-      document.getElementById('campos-fibra-gpon').classList.add('hidden');
     }
+
+    // Inicializar com valores padrão
+    document.addEventListener('DOMContentLoaded', function() {
+      // Configurar valores iniciais
+      document.getElementById('minutosRetroagir').value = '15';
+    });
   </script>
 </body>
 </html>
