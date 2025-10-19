@@ -282,35 +282,53 @@
       border-radius: var(--border-radius);
       margin-bottom: 15px;
       border: 1px solid #ffd54f;
+      position: relative;
     }
 
     .equipamento-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
     }
 
     .equipamento-title {
       font-weight: 600;
       color: var(--primary-dark);
+      font-size: 16px;
     }
 
     .remove-equipamento {
-      background: #f44336;
-      color: white;
+      background: transparent;
+      color: #666;
       border: none;
       border-radius: 50%;
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
+      transition: var(--transition);
+      font-size: 16px;
+    }
+
+    .remove-equipamento:hover {
+      background: rgba(0, 0, 0, 0.05);
+      color: #f44336;
     }
 
     .add-equipamento {
-      margin-top: 10px;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+
+    .equipamento-nome-input {
+      margin-bottom: 15px;
+    }
+
+    .equipamento-nome-input input {
+      background: white;
     }
 
     @media (max-width: 768px) {
@@ -375,9 +393,11 @@
         <div id="equipamentosContainer">
           <!-- Os campos de equipamento serão adicionados dinamicamente aqui -->
         </div>
-        <button type="button" class="btn-tertiary add-equipamento" onclick="adicionarEquipamento()">
-          <i class="fas fa-plus"></i> Adicionar Equipamento
-        </button>
+        <div class="add-equipamento-container">
+          <button type="button" class="btn-tertiary add-equipamento" onclick="adicionarEquipamento()">
+            <i class="fas fa-plus"></i> Adicionar Equipamento
+          </button>
+        </div>
       </div>
 
       <div class="config-group">
@@ -489,9 +509,13 @@
         <div class="equipamento-group" id="equipamento-${equipamentoCounter}">
           <div class="equipamento-header">
             <span class="equipamento-title">Equipamento ${equipamentoCounter}</span>
-            <button type="button" class="remove-equipamento" onclick="removerEquipamento(${equipamentoCounter})">
+            <button type="button" class="remove-equipamento" onclick="removerEquipamento(${equipamentoCounter})" title="Remover equipamento">
               <i class="fas fa-times"></i>
             </button>
+          </div>
+          <div class="form-group equipamento-nome-input">
+            <label for="nomeEquipamento-${equipamentoCounter}">Nome do Equipamento:</label>
+            <input type="text" id="nomeEquipamento-${equipamentoCounter}" placeholder="Digite o nome do equipamento">
           </div>
           <div class="form-group">
             <label for="dataNormalizacaoEquipamento-${equipamentoCounter}">Data e Hora de Normalização:</label>
@@ -568,6 +592,20 @@
       }
       
       return new Date(somaTempos / datasValidas);
+    }
+
+    // Função para obter os nomes dos equipamentos
+    function obterNomesEquipamentos() {
+      const nomes = [];
+      const inputs = document.querySelectorAll('[id^="nomeEquipamento-"]');
+      
+      inputs.forEach(input => {
+        if (input.value.trim() !== '') {
+          nomes.push(input.value.trim());
+        }
+      });
+      
+      return nomes;
     }
 
     // Função principal de cálculo de prazos
@@ -676,7 +714,14 @@
       // Adicionar informações específicas sobre normalização
       if (tipoIncidente === 'fibra-hfc-sem-sinal') {
         const inputs = document.querySelectorAll('[id^="dataNormalizacaoEquipamento-"]');
+        const nomesEquipamentos = obterNomesEquipamentos();
+        
         resultadoHTML += `<strong>Número de Equipamentos:</strong> ${inputs.length}<br>`;
+        
+        if (nomesEquipamentos.length > 0) {
+          resultadoHTML += `<strong>Equipamentos:</strong> ${nomesEquipamentos.join(', ')}<br>`;
+        }
+        
         resultadoHTML += `<strong>Data/Hora Média de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>`;
       } else {
         resultadoHTML += `<strong>Data/Hora de Normalização:</strong> ${formatarData(dataNormalizacao)}<br>`;
